@@ -66,14 +66,14 @@ class Deck:
           for card in a_hand:
                self.cards.remove(card)
 
-          return a_hand
+          return Player(a_hand)
 
 class Player:
 
      # deals a hand to the player
-     def __init__(self, deck : Deck):
+     def __init__(self, cards):
 
-          self.cards = deck.deal_hand()
+          self.cards = cards
           self.is_immune = False
           self.round_score = 0
           self.overall_score = 0
@@ -96,10 +96,10 @@ def choose_centre_card(deck : Deck):
 
      return random.choice(deck.cards)
 
-def create_players(players):
+# def create_players(players):
 
-     for i in range(num_players):
-          players.append(Player(deck))
+#      for i in range(num_players):
+#           players.append(Player())
 
 def pass_card(player_1 : Player, player_2 : Player, card : Card):
 
@@ -134,7 +134,7 @@ def apply_scoring_rules(player : Player, scoring_cards, auxiliary_cards):
 
           elif card_1.is_black_ten and card_2.is_black_ten:
 
-               s = "CALAMITY"
+               s = -100 # FIGURE OUT WHAT THIS ACTUALLY IS
 
           elif card_1.is_black_ten:
 
@@ -163,7 +163,7 @@ def apply_scoring_rules(player : Player, scoring_cards, auxiliary_cards):
 
      player.round_score = score
 
-def determine_scoring(players):
+def determine_scoring(players, centre_card):
 
      # first pass
      for player in players:
@@ -191,49 +191,59 @@ def determine_scoring(players):
 
           p.overall_score += final_player_scores[i]
 
-deck = Deck()
-players = []
 
-create_players(players)
+def one_round():
 
-centre_card = choose_centre_card(deck)
+     players = []
+     deck = Deck()
 
-print("CENTRE CARD: " + str(centre_card.get_card_info()))
+     for player in range(num_players):
 
-for player in players:
-     player.look()
+          p = deck.deal_hand()
+          players.append(p)
+          p.look()
 
-     print(player.identify_hand())
+     for i in range(num_players):
 
-for i in range(num_players):
+          # current player's turn
+          p1 = players[i]
 
-     # current player's turn
-     p1 = players[i]
+          # next player, if last player loop back to the first
+          p2 = players[i+1] if not (i == num_players - 1) else players[0]
 
-     # next player, if last player loop back to the first
-     p2 = players[i+1] if not (i == num_players - 1) else players[0]
+          # randomly select a card to pass along
+          card_to_pass = random.choice(p1.cards)
 
-     # randomly select a card to pass along
-     card_to_pass = random.choice(p1.cards)
+          pass_card(p1, p2, card_to_pass)
 
-     pass_card(p1, p2, card_to_pass)
+     for p in players:
+          print(p.identify_hand())
 
-print("AFTER PASSING")
+     deck.deal_hand()
 
-for player in players:
+     centre_card = choose_centre_card(deck)
 
-     # print(len(player.cards))
-     print(player.identify_hand())
+     for player in players:
+          choose_scoring_cards(player)
 
-for player in players:
-     choose_scoring_cards(player)
+     determine_scoring(players, centre_card)
 
-print("AFTER CHOOSING SCORING CARDS")
+     return players
 
-for player in players:
+playing = True
+rounds = 0
 
-     # print(len(player.cards))
-     print(player.identify_hand())
+while playing:
+     
+     rounds += 1
 
-print("ROUND SCORES:")
-determine_scoring(players)
+     players = one_round()
+
+     overall_scores = [p.overall_score for p in players]
+
+     print("round: " + str(rounds))
+     print("scores: " + str(overall_scores))
+     
+     if min([p.overall_score for p in players]) <= -100:
+          print("someone won!")
+          break
